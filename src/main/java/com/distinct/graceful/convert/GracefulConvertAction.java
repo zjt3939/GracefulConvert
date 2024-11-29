@@ -11,11 +11,13 @@ import com.intellij.psi.*;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.codeStyle.JavaCodeStyleManager;
 import com.intellij.psi.impl.source.PsiClassReferenceType;
-import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author zhoujintao
@@ -72,7 +74,9 @@ public class GracefulConvertAction extends AnAction {
     private void render(PsiMethod psiMethod) {
         Project project = psiMethod.getProject();
         PsiMethod last = psiMethod;
+
         for (int i = GENERATE_METHOD_TEXT_LIST.size() - 1; i >= 0; i--) {
+
             String methodText = GENERATE_METHOD_TEXT_LIST.get(i);
 
             PsiElementFactory elementFactory = JavaPsiFacade.getElementFactory(project);
@@ -84,10 +88,9 @@ public class GracefulConvertAction extends AnAction {
             CodeStyleManager.getInstance(psiMethod.getProject()).reformat(toMethod);
 
             psiMethod.getContainingClass().addAfter(toMethod, last);
-
         }
-        psiMethod.delete();
 
+        psiMethod.delete();
     }
 
 
@@ -95,17 +98,8 @@ public class GracefulConvertAction extends AnAction {
         return !(to instanceof PsiPrimitiveType) && !DATA_TYPE_SET.contains(to.getPresentableText()) && !to.getInternalCanonicalText().equals(from.getInternalCanonicalText()) && !(from instanceof PsiPrimitiveType);
     }
 
-
     public static boolean isListOrSet(PsiType to, PsiType from) {
-        String toPresentableText = to.getPresentableText();
-        String fromPresentableText = from.getPresentableText();
-        if ((toPresentableText.startsWith("List") || toPresentableText.startsWith("ArrayList"))
-                && (fromPresentableText.startsWith("List") || fromPresentableText.startsWith("ArrayList"))) {
-            return true;
-        }
-
-        if ((toPresentableText.startsWith("Set") || toPresentableText.startsWith("HashSet"))
-                && (fromPresentableText.startsWith("Set") || fromPresentableText.startsWith("HashSet"))) {
+        if (isList(to, from) || isSet(to, from)) {
             return true;
         }
         return false;
@@ -134,20 +128,9 @@ public class GracefulConvertAction extends AnAction {
         return toSubType.equals(fromSubType);
     }
 
-
-    PsiClass getPsiClass(PsiType psiType, Project project) {
-        String parameterClassWithPackage = psiType.getInternalCanonicalText().replaceAll("\\<.*?\\>", "");
-        //为了解析字段，这里需要加载参数的class
-        JavaPsiFacade facade = JavaPsiFacade.getInstance(project);
-        return facade
-                .findClass(parameterClassWithPackage, GlobalSearchScope.allScope(project));
-    }
-
-
     public static String getFirstUpperCase(String oldStr) {
         return oldStr.substring(0, 1).toUpperCase() + oldStr.substring(1);
     }
-
 
     private PsiMethod getPsiMethod(AnActionEvent e) {
         PsiElement elementAt = getPsiElement(e);
@@ -258,6 +241,7 @@ public class GracefulConvertAction extends AnAction {
 
 
         public static void generate(PsiType returnClassType, PsiType paramClassType) {
+
             String returnClassImportName = returnClassType.getInternalCanonicalText();
 
             String paramClassImportName = paramClassType.getInternalCanonicalText();
@@ -295,7 +279,6 @@ public class GracefulConvertAction extends AnAction {
 
             PsiField paramField = paramClass.findFieldByName(field.getNameIdentifier().getText(), false);
             if (paramField == null) {
-                builder.append("//todo \n");
                 builder.append(TARGET_NAME + ".set" + getFirstUpperCase(field.getNameIdentifier().getText()) + "();\n");
                 return;
             }
@@ -336,6 +319,5 @@ public class GracefulConvertAction extends AnAction {
     private static PsiType getReturnCollectClass(PsiClassReferenceType returnClassType) {
         return returnClassType.getReference().getTypeParameters()[0];
     }
-
 
 }
