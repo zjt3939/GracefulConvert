@@ -1,0 +1,32 @@
+plugins {
+    id("java")
+    id("org.jetbrains.intellij") version "1.13.3"
+}
+
+group = "com.distinct.graceful"
+version = "1.0.1"
+
+repositories {
+    maven { url 'https://maven.aliyun.com/repository/central/' }
+    maven { url 'https://maven.aliyun.com/repository/public/' }
+    maven { url 'https://maven.aliyun.com/repository/google/' }
+    maven { url 'https://maven.aliyun.com/repository/jcenter/' }
+    maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+    //    mavenCentral()
+}
+
+// Configure Gradle IntelliJ Plugin
+// Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
+intellij {
+    version.set("2022.2.5")
+    type.set("IC") // Target IDE Platform
+    plugins = ["com.intellij.java"]
+}
+
+tasks {
+    patchPluginXml {
+        sinceBuild.set("173.0")
+        untilBuild.set("242.*")
+    }
+
+}
